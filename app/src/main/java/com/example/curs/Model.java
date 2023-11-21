@@ -114,6 +114,7 @@ public class Model {
 
     public Model(Context context, String filename, float[] newColor, float[] translate, float scale, boolean smooth){
         color = newColor;
+        this.smooth = smooth;
 
         Matrix.setIdentityM(modelMatrix, 0);
         //Смещаем объект на переданные значения
@@ -153,18 +154,20 @@ public class Model {
                 "varying vec3 v_Normal;\n" +
                 "varying vec3 v_LightPos, v_EyePos;\n"+
 
-                "uniform vec4 a_Color;\n" +
+                "uniform vec4 u_Color;\n" +
 
                 "void main() {\n" +
                 "float specularPower=8.0;\n"+
-                "vec4 diffuseColor = a_Color;\n" +
+                "vec4 diffuseColor = u_Color;\n" +
                 "vec4 specularColor = vec4(1.0, 1.0, 1.0, 1.0);\n" +
                 "vec3 normal = normalize(v_Normal);\n" +
                 "vec3 light = normalize(v_LightPos);\n" +
                 "vec3 reflection = reflect(-light, normal);\n" +
                 "vec4 diffuse = diffuseColor * max(dot(normal, light), 0.0);\n" +
                 "vec4 specular = specularColor * pow(max(dot(normalize(v_EyePos), reflection), 0.0), specularPower);\n" +
-                "gl_FragColor = diffuse + specular + a_Color;\n" +
+                "vec4 finalColor = diffuse + specular;\n" +
+                "if (u_Color.w < 1.0) finalColor += u_Color;\n" +
+                "gl_FragColor = finalColor;\n" +
                 "}\n";
 
         //Передаём шейдеры в программу
@@ -179,8 +182,10 @@ public class Model {
         GLES20.glUseProgram(program);
 
         //Если используем текстуры
+        int textureHandle = 0;
+
         if(isTextured){
-            int textureHandle = GLES20.glGetAttribLocation(program, "a_TexCord");
+            textureHandle = GLES20.glGetAttribLocation(program, "a_TexCord");
             int textureLocation = GLES20.glGetUniformLocation(program, "u_Texture");
 
             //Передаём буффер текстурных вершин
@@ -194,7 +199,7 @@ public class Model {
         }
         //Если задаём цвет фигуре
         else{
-            int colorHandle = GLES20.glGetUniformLocation(program, "a_Color");
+            int colorHandle = GLES20.glGetUniformLocation(program, "u_Color");
             GLES20.glUniform4f(colorHandle, color[0], color[1], color[2], color[3]);
         }
 
@@ -225,9 +230,11 @@ public class Model {
         //Отрисовываем фигуру используя буффер индексов
         GLES20.glDrawElements(GLES20.GL_TRIANGLES, indexCount, GLES20.GL_UNSIGNED_SHORT, indexBuffer);
 
-        //Отключаем передачу атрибутов
+        //Отключаем передачу массивов в атрибуты
         GLES20.glDisableVertexAttribArray(positionHandle);
         GLES20.glDisableVertexAttribArray(normalHandle);
+        if(isTextured)
+            GLES20.glDisableVertexAttribArray(textureHandle);
     }
 
     private void readOBJFile(Context context, String filename){
@@ -333,6 +340,7 @@ public class Model {
         float[] vertexArray = new float[indices.size()*3];
         float[] textureArray = new float[indices.size()*2];
         float[] normalArray = new float[indices.size()*3];
+
         float[] normalValue = new float[verticies.size()];
         float[] normalCount = new float[verticies.size()];
 
@@ -375,7 +383,7 @@ public class Model {
             indexArray[i] = (short)i;
         }
 
-        //Среднее значение нормали (сглаживание треугольников)
+        //Среднее значение нормали (сглаживание)
         if(smooth){
             for (int i = 0; i < indices.size(); i++) {
                 int index = indices.get(i);
@@ -402,7 +410,7 @@ public class Model {
         indexBuffer.put(indexArray);
         indexBuffer.position(0);
 
-        ByteBuffer normalByteBuffer = ByteBuffer.allocateDirect(vertexArray.length * 4);
+        ByteBuffer normalByteBuffer = ByteBuffer.allocateDirect(normalArray.length * 4);
         normalByteBuffer.order(ByteOrder.nativeOrder());
         normalBuffer = normalByteBuffer.asFloatBuffer();
         normalBuffer.put(normalArray);

@@ -12,13 +12,13 @@ import android.util.Log;
 import javax.microedition.khronos.opengles.GL10;
 
 public class MyRenderer implements GLSurfaceView.Renderer {
-    private Model cup, water, banana, apple, table, pear, orange;
+    private Model cup, water, tomato, carrot, cucumber, potato, table;
     private Context context;
     float[] eyePos = new float[3];
     private final float[] viewProjectionMatrix = new float[16];
     private final float[] projectionMatrix = new float[16];
     private final float[] viewMatrix = new float[16];
-    int[] textureNames = new int[]{R.drawable.apple_texture, R.drawable.banana_texture, R.drawable.pear_texture, R.drawable.table_texture, R.drawable.orange_texture, R.drawable.cup_texture};
+    int[] textureNames = new int[]{R.drawable.carrot, R.drawable.cucumber, R.drawable.potato, R.drawable.table};
     int[] textures;
     float time;
 
@@ -29,6 +29,7 @@ public class MyRenderer implements GLSurfaceView.Renderer {
     @Override
     public void onSurfaceCreated(GL10 gl10, javax.microedition.khronos.egl.EGLConfig eglConfig) {
         GLES20.glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+
         GLES20.glEnable(GLES20.GL_DEPTH_TEST);
 
         time = 0;
@@ -59,36 +60,34 @@ public class MyRenderer implements GLSurfaceView.Renderer {
             GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR);
             GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR);
 
-            Bitmap pearBitmap = BitmapFactory.decodeResource(context.getResources(), textureNames[i]);
-            GLUtils.texImage2D(GLES20.GL_TEXTURE_2D, 0, pearBitmap, 0);
-
-            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, 0);
+            Bitmap bitmap = BitmapFactory.decodeResource(context.getResources(), textureNames[i]);
+            GLUtils.texImage2D(GLES20.GL_TEXTURE_2D, 0, bitmap, 0);
         }
 
         //Создание моделей, передача в них текстур и параметров для смещения, масштабирования и сглаживания
-        translate = new float[]{2, 0, 2};
-        pear = new Model(context, "pear.obj", textures[2], GLES20.GL_TEXTURE2, translate, scale, true);
+        translate = new float[]{-1, -0.5f, -3};
+        carrot = new Model(context, "carrot.obj", textures[0], GLES20.GL_TEXTURE0, translate, scale, true);
 
-        translate = new float[]{0, 0, 0};
-        apple = new Model(context, "apple.obj", textures[0], GLES20.GL_TEXTURE0, translate, scale, true);
-
-        translate = new float[]{0, -0.5f, -4};
+        translate = new float[]{3, -0.6f, -3};
         scale = 0.5f;
-        banana = new Model(context, "banana.obj", textures[1], GLES20.GL_TEXTURE1, translate, scale, true);
+        cucumber = new Model(context, "cucumber.obj", textures[1], GLES20.GL_TEXTURE1, translate, scale, true);
+
+        translate = new float[]{2, -0.3f, 2};
+        potato = new Model(context, "potato.obj", textures[2], GLES20.GL_TEXTURE2, translate, scale, true);
 
         translate = new float[]{0, -3.5f, 0};
-        scale = 0.5f;
         table = new Model(context, "table.obj", textures[3], GLES20.GL_TEXTURE3, translate, scale, false);
 
-        translate = new float[]{5, 0, -5};
+        translate = new float[]{1, 0, 0};
         scale = 1;
-        orange = new Model(context, "orange.obj", textures[4], GLES20.GL_TEXTURE4, translate, scale, true);
+        float[] tomatoColor = new float[]{0.5f, 0.2f, 0.2f, 1f};
+        tomato = new Model(context, "tomato.obj", tomatoColor, translate, scale, true);
 
-        translate = new float[]{5, 0, 5};
+        translate = new float[]{5, 0, 1};
         float[] cupColor = new float[]{0.2f, 0.2f, 0.2f, 0.5f};
         cup = new Model(context, "cup.obj", cupColor, translate, scale, false);
 
-        float[] waterColor = new float[]{0f, 0.2f, 1f, 0.8f};
+        float[] waterColor = new float[]{0f, 0.3f, 1f, 0.7f};
         water = new Model(context, "water.obj", waterColor, translate, scale, false);
     }
 
@@ -105,17 +104,17 @@ public class MyRenderer implements GLSurfaceView.Renderer {
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT|GLES20.GL_DEPTH_BUFFER_BIT);
 
         eyePos[0] = (float)Math.cos(time)*30f;
-        eyePos[1] = 30f;
+        eyePos[1] = 20f;
         eyePos[2] = (float)Math.sin(time)*30f;
 
-        Matrix.setLookAtM(viewMatrix, 0, eyePos[0], eyePos[1], eyePos[2], 0f, 0f, 0f, 0f, 1.0f, 0.0f);
+        Matrix.setLookAtM(viewMatrix, 0, eyePos[0], eyePos[1], eyePos[2], 0f, 0f, 0f, 0.0f, 1.0f, 0.0f);
         Matrix.multiplyMM(viewProjectionMatrix, 0, projectionMatrix, 0, viewMatrix, 0);
 
         //Отрисовка объектов с текстурами
-        pear.draw(viewProjectionMatrix, eyePos, true);
-        apple.draw(viewProjectionMatrix, eyePos, true);
-        banana.draw(viewProjectionMatrix, eyePos, true);
-        orange.draw(viewProjectionMatrix, eyePos, true);
+        carrot.draw(viewProjectionMatrix, eyePos, true);
+        cucumber.draw(viewProjectionMatrix, eyePos, true);
+        potato.draw(viewProjectionMatrix, eyePos, true);
+        tomato.draw(viewProjectionMatrix, eyePos, false);
         table.draw(viewProjectionMatrix, eyePos, true);
 
         //Включаем прозрачность для отрисовки стакана и воды
